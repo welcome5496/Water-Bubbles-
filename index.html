@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Sort Puzzle Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+        .game-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 50px;
+        }
+        .tube {
+            width: 60px;
+            height: 200px;
+            margin: 10px;
+            border: 2px solid #000;
+            position: relative;
+            background-color: #e2e2e2;
+            border-radius: 10px;
+        }
+        .liquid {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 30px;
+            border-radius: 5px 5px 0 0;
+        }
+        .btn {
+            margin: 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .btn:disabled {
+            background-color: #cccccc;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container" id="gameContainer">
+        <!-- Test Tubes will be inserted here by JavaScript -->
+    </div>
+
+    <div style="text-align: center;">
+        <button class="btn" id="resetBtn">Reset</button>
+        <button class="btn" id="undoBtn" disabled>Undo</button>
+    </div>
+
+    <script>
+        // Global variables
+        const gameContainer = document.getElementById('gameContainer');
+        let tubes = []; // Store tubes
+        let moves = []; // Stack to track moves (for undo)
+        let colors = ['#ff6347', '#4682b4', '#32cd32', '#f0e68c', '#ff1493']; // Colors available
+        let tubeCount = 4; // Number of tubes
+        let liquidHeight = 30; // Height of each liquid level
+
+        // Initialize the game
+        function initGame() {
+            tubes = [];
+            moves = [];
+            for (let i = 0; i < tubeCount; i++) {
+                tubes.push(createTube());
+            }
+            renderTubes();
+        }
+
+        // Create a tube
+        function createTube() {
+            let tube = {
+                colors: shuffle(colors.slice()), // Randomly fill the tube
+                element: document.createElement('div')
+            };
+            tube.element.classList.add('tube');
+            tube.element.addEventListener('click', () => selectTube(tube));
+            return tube;
+        }
+
+        // Shuffle the colors array
+        function shuffle(arr) {
+            let shuffled = [];
+            while (arr.length > 0) {
+                let randIndex = Math.floor(Math.random() * arr.length);
+                shuffled.push(arr.splice(randIndex, 1)[0]);
+            }
+            return shuffled;
+        }
+
+        // Render all tubes on the screen
+        function renderTubes() {
+            gameContainer.innerHTML = ''; // Clear previous tubes
+            tubes.forEach((tube) => {
+                let tubeDiv = tube.element;
+                tubeDiv.innerHTML = ''; // Reset contents
+                tube.colors.forEach((color) => {
+                    let liquidDiv = document.createElement('div');
+                    liquidDiv.classList.add('liquid');
+                    liquidDiv.style.backgroundColor = color;
+                    tubeDiv.appendChild(liquidDiv);
+                });
+                gameContainer.appendChild(tubeDiv);
+            });
+        }
+
+        // Handle tube selection
+        let selectedTube = null;
+        function selectTube(tube) {
+            if (selectedTube === tube) {
+                selectedTube = null;
+                tube.element.style.border = '2px solid #000'; // Reset border
+            } else {
+                if (selectedTube) {
+                    moveLiquid(selectedTube, tube);
+                }
+                selectedTube = tube;
+                tube.element.style.border = '2px solid blue'; // Highlight selected tube
+            }
+        }
+
+        // Move liquid from one tube to another
+        function moveLiquid(fromTube, toTube) {
+            if (fromTube === toTube || !canPour(fromTube, toTube)) return;
+            let color = fromTube.colors.pop();
+            toTube.colors.push(color);
+            renderTubes();
+            moves.push({ fromTube, toTube, color });
+        }
+
+        // Check if a pour is valid
+        function canPour(fromTube, toTube) {
+            if (toTube.colors.length === 0) return true; // Empty tube
+            let topFromColor = fromTube.colors[fromTube.colors.length - 1];
+            let topToColor = toTube.colors[toTube.colors.length - 1];
+            return topFromColor === topToColor || toTube.colors.length === 0;
+        }
+
+        // Undo last move
+        function undoMove() {
+            if (moves.length === 0) return;
+            let lastMove = moves.pop();
+            let { fromTube, toTube, color } = lastMove;
+            fromTube.colors.push(color);
+            toTube.colors.pop();
+            renderTubes();
+        }
+
+        // Reset the game
+        function resetGame() {
+            initGame();
+            document.getElementById('undoBtn').disabled = true;
+        }
+
+        // Add event listeners for reset and undo buttons
+        document.getElementById('resetBtn').addEventListener('click', resetGame);
+        document.getElementById('undoBtn').addEventListener('click', undoMove);
+
+        // Initialize the game
+        initGame();
+    </script>
+</body>
+</html>
